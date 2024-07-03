@@ -50,3 +50,30 @@ def rag_function(query, num_docs=5):
 query = "Explain the theory of relativity."
 output = rag_function(query)
 print(output)
+
+prompt_template = """Use the following pieces of context to answer the question at the end. Please follow the following rules:
+1. If you don't know the answer, don't try to make up an answer. Just say "I can't find the final answer but you may want to check the following links".
+2. If you find the answer, write the answer in a concise way with five sentences maximum.
+
+{context}
+
+Question: {question}
+
+Helpful Answer:
+"""
+
+PROMPT = PromptTemplate(
+ template=prompt_template, input_variables=["context", "question"]
+)
+
+retrievalQA = RetrievalQA.from_chain_type(
+    llm=llm,
+    chain_type="stuff",
+    retriever=retriever,
+    return_source_documents=True,
+    chain_type_kwargs={"prompt": PROMPT}
+)
+
+# Call the QA chain with our query.
+result = retrievalQA.invoke({"query": query})
+print(result['result'])
