@@ -1,53 +1,57 @@
-from rag_engine import *
 import streamlit as st
+from rag_engine import *
+from api import query
 
+# Streamlit configuration
 st.set_page_config(page_title="RAG")
 st.title("Retrieval Augmented Generation Engine")
+st.markdown('This is a web app that performs retrieval augmented generation<br> on arXiv articles on Software Engineering and Programming languages.', unsafe_allow_html=True)
 
 
-def query_llm(retriever, query):
-    qa_chain = ConversationalRetrievalChain.from_llm(
-        llm=llm,
-        retriever=retriever,
-        return_source_documents=True,
-        memory=ConversationBufferMemory()
-    )
-    result = qa_chain({'question': query, 'chat_history': st.session_state.messages})
-    result = result['answer']
-    st.session_state.messages.append((query, result))
-    return result
-
-#Include feature sliders.
+# Document features
 st.header('Document features')
-col1, col2 = st.columns(2)
 
-with col1:
-    st.text('Number of documents.')
-    num_docs = st.slider('Number of RAG documents', 1, 3, 1)
+st.text('Number of documents to retrieve.')
+num_docs = st.slider('Number of RAG documents', 1, 3, 1)
 
-with col2:
-    st.text('Context window')
-    ctx_win = st.slider('Number of tokens for model to generate', 100, 2000, 100)
+st.text('Token size')
+ctx_win = st.slider('Select the number of tokens the model should generate', 100, 500, 100)
 
-
-
-def process_documents():
-    pass
+def query_llm(retriever, query_text, num_docs, ctx_win):
+    """Function to query the LLM and get the response."""
+    context = retriever(query_text, num_docs)
+    prompt = generate_prompt(query_text, context)
+    response = query({
+        "inputs": prompt,
+        "parameters": {
+            "top_k": 10,
+            "top_p": 0.95,
+            "temperature": 0.1,
+            "max_new_tokens": ctx_win,
+            "do_sample": True,
+            "return_text": True,
+            "return_full_text": True,
+            "return_tensors": False,
+            "clean_up_tokenization_spaces": True
+        }
+    })
+    return response['text']
 
 def boot():
-    #Code for performing RAG and returning LLM output.
-
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-    #
-    for message in st.session_state.messages:
-        st.chat_message('human').write(message[0])
-        st.chat_message('ai').write(message[1])    
-    #
-    if query := st.chat_input():
-        st.chat_message("human").write(query)
-        response = query_llm(st.session_state.retriever, query)
-        st.chat_message("ai").write(response)
+    """Main function to perform RAG and display the chat interface."""
+    query_text = st.text_input("Enter your query:")
+    
+    if st.button('Submit'):
+        if query_text:
+            with st.spinner('Fetching response...'):
+                try:
+                    response = query_llm(query_text, num_docs, ctx_win)
+                    st.write("### Response")
+                    st.write(response)
+                except Exception as e:
+                    st.error(f"Error: {str(e)}")
+        else:
+            st.warning("Please enter the query.")
 
 if __name__ == '__main__':
     boot()
