@@ -12,8 +12,18 @@ def query(payload):
 	return response.json()
 
 output = query({
-	"inputs": "Can you please let us know more details about your expertise",
-	"parameters": {}
+	"inputs": "Can you please let us know more details about your expertise?",
+	"parameters": {
+		"top_k": 10,
+		"top_p": 0.95,
+		"temperature": 0.1,
+		"max_new_tokens": 1024,
+		"do_sample": True,
+		"return_text": True,
+		"return_full_text": True,
+		"return_tensors": False,
+		"clean_up_tokenization_spaces": True
+	}
 })
 
 print(output)

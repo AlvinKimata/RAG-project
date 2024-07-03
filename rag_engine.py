@@ -1,85 +1,58 @@
-from langchain.llms import HuggingFacePipeline
+from warnings import filterwarnings
+filterwarnings('ignore')
+
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
-
 from langchain.embeddings.sentence_transformer import SentenceTransformerEmbeddings
 from langchain_postgres import PGVector
-from huggingface_hub.inference_api import InferenceApi
 
 
 connection = "postgresql+psycopg://langchain:langchain@13.246.58.40:6024/langchain"
 collection_name = "arxiv_docs"
+
+print("Loading Sentence transformer and vectorstore...")
+
 embeddings = SentenceTransformerEmbeddings(model_name="all-MiniLM-L6-v2")
-
-
 vectorstore = PGVector(
-    embeddings = embeddings,
-    collection_name = collection_name, 
-    connection = connection,
-    use_jsonb = True
+    embeddings=embeddings,
+    collection_name=collection_name, 
+    connection=connection,
+    use_jsonb=True
 )
 
-#Initialize LLM.
-llm = HuggingFacePipeline.from_model_id(model_id="", task="text2text-generation", model_kwargs={"temperature": 0, "max_length": 200,  "max_new_tokens":512,
-    "top_k":10, "top_p":0.95, "typical_p":0.95,
-    "temperature":0.01, "repetition_penalty":1.03,}, device=0)
-
-def similarity_search(text, num_docs):
-    '''Perform similarity search from query and return relevant documents.'''
-    documents = vectorstore.similarity_search(text, k = num_docs)
-    return documents
+print("Loaded Sentence transformer and vectorstore.")
 
 
-def rag_function(query, num_docs=5):
+def rag_function(query, num_docs=3):
     # Perform similarity search
     relevant_docs = similarity_search(query, num_docs)
     
     # Concatenate the content of the relevant documents
-    context = " ".join([doc.page_content for doc in relevant_docs])
+    context = "\n\n".join([doc.page_content for doc in relevant_docs])
+    return context
 
-    # Create a prompt for the LLM
-    messages = [
-        {"role": "system", "content": "Summarize the text below for a second-grade student."},
-        {"role": "user", "content": context}
-    ]
-    
-    # Use the LLM to generate a response
-    response = llm.generate(messages)
-    
-    return response
+def similarity_search(text, num_docs):
+    '''Perform similarity search from query and return relevant documents.'''
+    documents = vectorstore.similarity_search(text, k=num_docs)
+    return documents
+
 
 # Example usage
-query = "Explain the theory of relativity."
-output = rag_function(query)
-print(output)
+question = "Object oriented principles in C#"
+context = rag_function(question)
 
-prompt_template = """Use the following pieces of context to answer the question at the end. Please follow the following rules:
-1. If you don't know the answer, don't try to make up an answer. Just say "I can't find the final answer but you may want to check the following links".
-2. If you find the answer, write the answer in a concise way with five sentences maximum.
+prompt_template = f"""
+You are a helpful assistant. Use the information provided to answer the question below. Follow these rules:
+1. Base your answer on the facts in the provided information.
+2. Keep your answer concise, up to five sentences.
+3. If the information doesn't contain the answer, inform the user and recommend relevant articles.
 
-{context}
+Information:\n {context}
 
 Question: {question}
 
 Helpful Answer:
 """
 
-PROMPT = PromptTemplate(
- template=prompt_template, input_variables=["context", "question"]
-)
 
-retrievalQA = RetrievalQA.from_chain_type(
-    llm=llm,
-    chain_type="stuff",
-    retriever=retriever,
-    return_source_documents=True,
-    chain_type_kwargs={"prompt": PROMPT}
-)
-
-# Call the QA chain with our query.
-result = retrievalQA.invoke({"query": query})
-print(result['result'])
-
-
-inference = InferenceApi(repo_id="bert-base-uncased", token=API_TOKEN)
-inference(inputs="The goal of life is [MASK].")
+print(f"template: {prompt_template}")
