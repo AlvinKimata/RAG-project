@@ -4,7 +4,7 @@ filterwarnings('ignore')
 from langchain.embeddings.sentence_transformer import SentenceTransformerEmbeddings
 from langchain_postgres import PGVector
 
-connection = "postgresql+psycopg://langchain:langchain@13.246.58.40:6024/langchain"
+connection = "postgresql+psycopg://langchain:langchain@localhost:6024/langchain"
 collection_name = "arxiv_docs"
 
 print("Loading Sentence transformer and vectorstore...")
@@ -36,8 +36,6 @@ def document_template(document):
 def rag_function(query, num_docs=3):
     '''Perform similarity search and return the context.'''
     relevant_docs = similarity_search(query, num_docs)
-
-    #Filter out title and content
     context = "\n\n".join([document_template(doc) for doc in relevant_docs])
     return context
 
@@ -47,21 +45,22 @@ def generate_prompt(query, num_docs=3):
     prompt_template = f"""
     You are a helpful assistant. Use the information provided to answer the question below. Follow these rules:
     1. Base your answer on the facts in the provided information.
-    2. Keep your answer concise, up to five sentences.
-    3. If the information doesn't contain the answer, inform the user and recommend an article relevant to the question based on its title and arXiv ID.
+    2. Keep your answer concise.
+    3. If the information doesn't contain the answer, inform the user and recommend an article relevant to the question based on title and arXiv ID from the context.
 
-    Information:
+    Question: 
+    {query}
+
+    Context:
     {context}
-
-    Question: {query}
 
     Helpful Answer:
     """
 
     return prompt_template.strip()
 
-# # Example usage
-# question = "Object oriented principles in C#"
-# prompt = generate_prompt(question)
+# Example usage
+question = "Provide examples of compiler optimization techniques."
+prompt = generate_prompt(question)
 
-# print(f"template: {prompt}")
+print(f"template: {prompt}")

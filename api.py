@@ -1,9 +1,9 @@
 import requests
 
-API_URL = "https://zamjmbhxi82i4h39.us-east-1.aws.endpoints.huggingface.cloud"
+API_URL = ""
 headers = {
 	"Accept" : "application/json",
-	"Authorization": "Bearer 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",
+	"Authorization": "Bearer hf_XX",
 	"Content-Type": "application/json" 
 }
 
