@@ -4,6 +4,8 @@ from langchain.chains import ConversationalRetrievalChain
 
 from langchain.embeddings.sentence_transformer import SentenceTransformerEmbeddings
 from langchain_postgres import PGVector
+from huggingface_hub.inference_api import InferenceApi
+
 
 connection = "postgresql+psycopg://langchain:langchain@13.246.58.40:6024/langchain"
 collection_name = "arxiv_docs"
@@ -77,3 +79,7 @@ retrievalQA = RetrievalQA.from_chain_type(
 # Call the QA chain with our query.
 result = retrievalQA.invoke({"query": query})
 print(result['result'])
+
+
+inference = InferenceApi(repo_id="bert-base-uncased", token=API_TOKEN)
+inference(inputs="The goal of life is [MASK].")

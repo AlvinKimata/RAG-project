@@ -1,0 +1,10 @@
+huggingface-hub
+langchain
+streamlit
+langchain_cohere 
+langchain_core 
+langchain_postgres 
+langchain-community 
+sentence-transformers 
+datasets 
+pyarrow
