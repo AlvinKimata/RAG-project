@@ -46,7 +46,8 @@ def generate_prompt(query, num_docs=3):
     You are a helpful assistant. Use the information provided to answer the question below. Follow these rules:
     1. Base your answer on the facts in the provided information.
     2. Keep your answer concise.
-    3. If the information doesn't contain the answer, inform the user and recommend an article relevant to the question based on title and arXiv ID from the context.
+    3. Recommend an article relevant to the question based on title and arXiv ID from the context.
+    4. If the information doesn't contain the answer, inform the user and recommend an article relevant to the question based on title and arXiv ID from the context.
 
     Question: 
     {query}
